@@ -18,34 +18,59 @@ public class Main extends Application {
             e.printStackTrace();
         }
 
-        if (locations != null) {
-            for (Location location : locations) {
-                System.out.println("Name: " + location.getName() +
-                        ", Capacity: " + location.getCapacity() +
-                        ", Latitude: " + location.getLa() +
-                        ", Longitude: " + location.getLo());
-            }
-        }
+        KMeans kMeans = new KMeans(3, locations);
+        // Uzmi grupisane centroids
+        kMeans.fit(locations);
+        Location[] centroids = kMeans.getCentroids();
 
 
         StringBuilder javascriptCode = new StringBuilder();
         if (locations != null) {
             for (int i = 0; i < locations.length; i+=4) {
-                    javascriptCode.append("L.circleMarker([")
-                            .append(locations[i].getLa())  // Latitude
-                            .append(", ")
-                            .append(locations[i].getLo())  // Longitude
-                            .append("], { radius: 1 })")
-                            .append(".addTo(map)")
-                            .append(".bindPopup('")
-                            .append(locations[i].getName())  // Name
-                            .append(" - Capacity: ")
-                            .append(locations[i].getCapacity())  // Capacity
-                            .append(" - Lo: ")
-                            .append(locations[i].getLo())
-                            .append(" - La: ")
-                            .append(locations[i].getLa())
-                            .append("');\n");
+                javascriptCode.append("L.circleMarker([")
+                        .append(locations[i].getLa())
+                        .append(", ")
+                        .append(locations[i].getLo())
+                        .append("], { radius: 1, color: '")
+                        .append(locations[i].getColor())
+                        .append("', fillColor: '")
+                        .append(locations[i].getColor())
+                        .append("', fillOpacity: 0.8 })")
+                        .append(".addTo(map)")
+                        .append(".bindPopup('")
+                        .append(locations[i].getName())
+                        .append(" - Capacity: ")
+                        .append(locations[i].getCapacity())
+                        .append(" - Lo: ")
+                        .append(locations[i].getLo())
+                        .append(" - La: ")
+                        .append(locations[i].getLa())
+                        .append("');\n");
+            }
+        }
+
+        if (centroids != null) {
+            System.out.println("what");
+            for (Location centroid : centroids) {
+                javascriptCode.append("L.circleMarker([")
+                        .append(centroid.getLa())  // Latitude
+                        .append(", ")
+                        .append(centroid.getLo())  // Longitude
+                        .append("], { radius: 10, color: '")
+                        .append(centroid.getColor())  // Boja dodeljena svakoj lokaciji
+                        .append("', fillColor: '")
+                        .append(centroid.getColor())  // Ispunjava marker bojom
+                        .append("', fillOpacity: 0.8 })")  // Podesite prozirnost ispune
+                        .append(".addTo(map)")
+                        .append(".bindPopup('")
+                        .append(centroid.getName())  // Ime lokacije
+                        .append(" - Capacity: ")
+                        .append(centroid.getCapacity())  // Kapacitet
+                        .append(" - Lo: ")
+                        .append(centroid.getLo())
+                        .append(" - La: ")
+                        .append(centroid.getLa())
+                        .append("');\n");
             }
         }
 

@@ -10,32 +10,58 @@ import java.util.List;
 public class Location {
     private String name;
     private double capacity;
-    private String la;
-    private String lo;
+    private double la;
+    private double lo;
+    private String color;
 
-    public Location(String name, double capacity, String la, String lo) {
+    public Location(String name, double capacity, double la, double lo) {
         this.name = name;
         this.capacity = capacity;
         this.la = la;
         this.lo = lo;
+        this.color ="red";
+    }
+
+    public Location(String name, double capacity, double la, double lo, String color) {
+        this.name = name;
+        this.capacity = capacity;
+        this.la = la;
+        this.lo = lo;
+        this.color = color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public String getName() {
         return name;
     }
 
+    public String getColor() {
+        return color;
+    }
+
     public double getCapacity() {
         return capacity;
     }
 
-    public String getLa() {
+    public double getLa() {
         return la;
     }
 
-    public String getLo() {
+    public double getLo() {
         return lo;
     }
 
+    public double distance(Location other) {
+        double latDiff = this.la - other.la;
+        double lonDiff = this.lo - other.lo;
+        double capacityDiff = this.capacity - other.capacity;
+        return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff + capacityDiff * capacityDiff);
+    }
+
+    // Static method to load locations from a JSON file
     public static Location[] loadLocationsFromJson(String filePath) throws IOException {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
             JsonArray jsonArray = reader.readArray();
@@ -44,8 +70,9 @@ public class Location {
             for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
                 String name = jsonObject.getString("name");
                 double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
-                String la = jsonObject.getString("la");
-                String lo = jsonObject.getString("lo");
+
+                double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude as double
+                double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude as double
                 locations.add(new Location(name, capacity, la, lo));
             }
 

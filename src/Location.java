@@ -1,8 +1,11 @@
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Location {
@@ -65,30 +68,28 @@ public class Location {
                 int counter = 0;
                 int locationSize =  locations.length;
 
-                // Čitanje postojećih Location objekata iz JSON fajla
-                while (counter < locationSize) {
-                    try {
-                        JsonObject jsonObject = reader.readObject();  // Čitanje jednog objekta iz JSON fajla
-                        String name = jsonObject.getString("name");
-                        double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
-                        double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude
-                        double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude
-                        
-                        locations[counter] = new Location(name, capacity, la, lo);
-                        counter++;
-                    } catch (Exception e) {
-                        // Ako nije bilo više objekata, izlazimo iz petlje
-                        break;
-                    }
+            JsonArray jsonArray = reader.readArray();
+            for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
+                if (counter >= locationSize){
+                    break;
                 }
 
-                // Ako nedostaje objekata, generišemo nasumične Location objekte
+                String name = jsonObject.getString("name");
+                double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
+
+                double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude as double
+                double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude as double
+                locations[counter] = new Location(name, capacity, la, lo);
+                counter++;
+            }
+
+
                 Random random = new Random();
                 while (counter < locationSize) {
                     String name = "Location_" + (counter + 1); // Generisanje imena lokacije
                     double capacity = 50.0 + (200.0 - 50.0) * random.nextDouble(); // Nasumična kapacitet
-                    double la = -90 + (90 - (-90)) * random.nextDouble();  // Nasumična latituda
-                    double lo = -180 + (180 - (-180)) * random.nextDouble(); // Nasumična longitud
+                    double la = 46 + (54 - 46) * random.nextDouble();  // Nasumična latituda
+                    double lo = 8 + (15  - 8) * random.nextDouble(); // Nasumična longitud
 
                     locations[counter] = new Location(name, capacity, la, lo);
                     counter++;

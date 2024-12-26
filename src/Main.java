@@ -15,18 +15,18 @@ public class Main extends Application {
             String filePath = "./src/germany.json";
             Location.loadLocations(filePath, locations);
 
-            for (int i = 0; i < accumulationSites; i ++){
-                System.out.println(i + " " + locations[i].getCapacity());
-            }
+//            for (int i = 0; i < accumulationSites; i ++){
+//                System.out.println(i + " " + locations[i].getCapacity());
+//            }
 
             int NumberOfClusters = 10;
             KMeans cluster = new KMeans(NumberOfClusters, locations);
             cluster.fit();
 
             Location[] centroids = cluster.getCentroids();
-            for (int i =0; i < centroids.length; i++){
-                System.out.println(centroids[i].getCapacity());
-            }
+//            for (int i =0; i < centroids.length; i++){
+//                System.out.println(centroids[i].getCapacity());
+//            }
 
 
             StringBuilder javascriptCode = new StringBuilder();
@@ -55,7 +55,6 @@ public class Main extends Application {
             }
 
             if (centroids != null) {
-                System.out.println("what");
                 for (Location centroid : centroids) {
                     javascriptCode.append("L.circleMarker([")
                             .append(centroid.getLa())  // Latitude

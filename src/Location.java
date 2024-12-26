@@ -1,11 +1,9 @@
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
 
 public class Location {
     private String name;
@@ -62,21 +60,39 @@ public class Location {
     }
 
     // Static method to load locations from a JSON file
-    public static Location[] loadLocationsFromJson(String filePath) throws IOException {
+    public static void loadLocations(String filePath, Location[] locations) throws IOException {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
-            JsonArray jsonArray = reader.readArray();
-            List<Location> locations = new ArrayList<>();
+                int counter = 0;
+                int locationSize =  locations.length;
 
-            for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
-                String name = jsonObject.getString("name");
-                double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
+                // Čitanje postojećih Location objekata iz JSON fajla
+                while (counter < locationSize) {
+                    try {
+                        JsonObject jsonObject = reader.readObject();  // Čitanje jednog objekta iz JSON fajla
+                        String name = jsonObject.getString("name");
+                        double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
+                        double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude
+                        double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude
+                        
+                        locations[counter] = new Location(name, capacity, la, lo);
+                        counter++;
+                    } catch (Exception e) {
+                        // Ako nije bilo više objekata, izlazimo iz petlje
+                        break;
+                    }
+                }
 
-                double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude as double
-                double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude as double
-                locations.add(new Location(name, capacity, la, lo));
+                // Ako nedostaje objekata, generišemo nasumične Location objekte
+                Random random = new Random();
+                while (counter < locationSize) {
+                    String name = "Location_" + (counter + 1); // Generisanje imena lokacije
+                    double capacity = 50.0 + (200.0 - 50.0) * random.nextDouble(); // Nasumična kapacitet
+                    double la = -90 + (90 - (-90)) * random.nextDouble();  // Nasumična latituda
+                    double lo = -180 + (180 - (-180)) * random.nextDouble(); // Nasumična longitud
+
+                    locations[counter] = new Location(name, capacity, la, lo);
+                    counter++;
             }
-
-            return locations.toArray(new Location[0]);
         }
     }
 }

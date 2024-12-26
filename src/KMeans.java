@@ -6,24 +6,24 @@ public class KMeans {
     private int k;
     private Location[] centroids;
     private  Random random = new Random();
+    private Location[] locations;
 
     public KMeans(int k, Location[] locations) {
         this.k = k;
-        centroids = new Location[k];
+        this.centroids = new Location[k];
+        this.locations = locations;
 
         for (int i = 0; i < k; i++) {
-            centroids[i] = locations[i];
-            centroids[i].setColor(generateRandomColor(random));
+            this.centroids[i] = locations[i];
+            this.centroids[i].setColor(generateRandomColor(random));
         }
     }
 
-    public void fit(Location[] locations) {
-        long startTime = System.currentTimeMillis();
-        long duration = 5000;
-
-        while (System.currentTimeMillis() - startTime < duration) {
+    public void fit() {
+       for(int i = 0; i < 100; i++) {
             List<List<Location>> clusters = new ArrayList<>();
-            for (int i = 0; i < k; i++) {
+
+            for (int j = 0; j < k; j++) {
                 clusters.add(new ArrayList<>());
             }
 
@@ -31,12 +31,11 @@ public class KMeans {
                 int closestCentroid = findClosestCentroid(location);
                 location.setColor(centroids[closestCentroid].getColor());
 
-              clusters.get(closestCentroid).add(location);
+                clusters.get(closestCentroid).add(location);
             }
 
-            for (int i = 0; i < k; i++) {
-                Location newCentroid = calculateCentroid(clusters.get(i), centroids[i].getColor());
-                centroids[i] = newCentroid;
+            for (int j = 0; j < k; j++) {
+                centroids[j] = calculateCentroid(clusters.get(j), centroids[j].getColor());
             }
         }
     }

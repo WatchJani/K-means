@@ -51,7 +51,7 @@ public class KMeans {
     }
 
     public void fit() {
-       for(int i = 0; i < 20; i++) {
+       for(int i = 0; i < 100; i++) {
             List<List<Location>> clusters = new ArrayList<>();
 
             for (int j = 0; j < k; j++) {

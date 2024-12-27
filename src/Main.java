@@ -6,8 +6,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Optional;
 
 public class Main extends Application {
         @Override
@@ -24,7 +22,25 @@ public class Main extends Application {
 //          }
 
             KMeans cluster = new KMeans(NumberOfClusters, locations);
-            cluster.fit();
+
+
+            long startTime = System.currentTimeMillis();
+            long maxDurationTestTime = 60 * 1_000;
+
+            int numberOfIteration = 3;
+
+            for (int i = 0; i < numberOfIteration; i++){
+                if (!(System.currentTimeMillis() - startTime < maxDurationTestTime)){
+                    System.out.println("not enough time for testing...");
+                    break;
+                }
+
+                cluster.fit();
+            }
+
+            long endTime = System.currentTimeMillis();
+            System.out.println((endTime - startTime) / numberOfIteration);
+
             Location[] centroids = cluster.getCentroids();
 //            for (int i =0; i < centroids.length; i++){
 //                System.out.println(centroids[i].getCapacity());

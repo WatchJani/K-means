@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Random;
 
 public class Location {
-    private String name;
+    private final String name;
     private double capacity;
     private double la;
     private double lo;
@@ -61,38 +61,38 @@ public class Location {
     }
 
     // Static method to load locations from a JSON file
-    public static void loadLocations(String filePath, Location[] locations) throws IOException {
+    public static void loadLocations(String filePath, Location[] locations) {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
-                int counter = 0;
-                int locationSize =  locations.length;
-
+            int counter = 0;
+            int locationSize = locations.length;
 
             JsonArray jsonArray = reader.readArray();
             for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
-                if (counter >= locationSize){
+                if (counter >= locationSize) {
                     break;
                 }
 
                 String name = jsonObject.getString("name");
                 double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
-
                 double la = Double.parseDouble(jsonObject.getString("la"));
                 double lo = Double.parseDouble(jsonObject.getString("lo"));
 
-                locations[counter] = new Location(name, capacity/1000, la, lo);
+                locations[counter] = new Location(name, capacity / 1000, la, lo);
                 counter++;
             }
 
-                Random random = new Random();
-                while (counter < locationSize) {
-                    String name = "Location_" + (counter + 1);
-                    double capacity = 116024  * random.nextDouble();
-                    double la = 48 + (54 - 48) * random.nextDouble();
-                    double lo = 8 + (13  - 8) * random.nextDouble();
+            Random random = new Random();
+            while (counter < locationSize) {
+                String name = "Location_" + (counter + 1);
+                double capacity = 116024 * random.nextDouble();
+                double la = 48 + (54 - 48) * random.nextDouble();
+                double lo = 8 + (13 - 8) * random.nextDouble();
 
-                    locations[counter] = new Location(name, capacity/1000, la, lo);
-                    counter++;
+                locations[counter] = new Location(name, capacity / 1000, la, lo);
+                counter++;
             }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
         }
     }
 }

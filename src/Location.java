@@ -4,8 +4,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class Location {
@@ -68,6 +66,7 @@ public class Location {
                 int counter = 0;
                 int locationSize =  locations.length;
 
+
             JsonArray jsonArray = reader.readArray();
             for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
                 if (counter >= locationSize){
@@ -77,21 +76,21 @@ public class Location {
                 String name = jsonObject.getString("name");
                 double capacity = jsonObject.getJsonNumber("capacity").doubleValue();
 
-                double la = Double.parseDouble(jsonObject.getString("la"));  // Latitude as double
-                double lo = Double.parseDouble(jsonObject.getString("lo"));  // Longitude as double
-                locations[counter] = new Location(name, capacity, la, lo);
+                double la = Double.parseDouble(jsonObject.getString("la"));
+                double lo = Double.parseDouble(jsonObject.getString("lo"));
+
+                locations[counter] = new Location(name, capacity/1000, la, lo);
                 counter++;
             }
 
-
                 Random random = new Random();
                 while (counter < locationSize) {
-                    String name = "Location_" + (counter + 1); // Generisanje imena lokacije
-                    double capacity = 50.0 + (200.0 - 50.0) * random.nextDouble(); // Nasumična kapacitet
-                    double la = 46 + (54 - 46) * random.nextDouble();  // Nasumična latituda
-                    double lo = 8 + (15  - 8) * random.nextDouble(); // Nasumična longitud
+                    String name = "Location_" + (counter + 1);
+                    double capacity = 116024  * random.nextDouble();
+                    double la = 48 + (54 - 48) * random.nextDouble();
+                    double lo = 8 + (13  - 8) * random.nextDouble();
 
-                    locations[counter] = new Location(name, capacity, la, lo);
+                    locations[counter] = new Location(name, capacity/1000, la, lo);
                     counter++;
             }
         }

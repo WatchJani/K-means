@@ -9,17 +9,17 @@ import java.io.File;
 public class Main extends Application {
         @Override
         public void start(Stage primaryStage)throws Exception {
-            int accumulationSites = 500;
+            int accumulationSites = 12000;
             Location[] locations = new Location[accumulationSites];
 
             String filePath = "./src/germany.json";
             Location.loadLocations(filePath, locations);
 
 //            for (int i = 0; i < accumulationSites; i ++){
-//                System.out.println(i + " " + locations[i].getCapacity());
+//                System.out.println(i + " " + locations[i].getCapacity() + " " + locations[i].getLa() + " " + locations[i].getLo());
 //            }
 
-            int NumberOfClusters = 10;
+            int NumberOfClusters = 50;
             KMeans cluster = new KMeans(NumberOfClusters, locations);
             cluster.fit();
 
@@ -31,7 +31,7 @@ public class Main extends Application {
 
             StringBuilder javascriptCode = new StringBuilder();
             if (locations != null) {
-                for (int i = 0; i < locations.length; i+=4) {
+                for (int i = 0; i < locations.length; i++) {
                     javascriptCode.append("L.circleMarker([")
                             .append(locations[i].getLa())
                             .append(", ")
@@ -57,19 +57,19 @@ public class Main extends Application {
             if (centroids != null) {
                 for (Location centroid : centroids) {
                     javascriptCode.append("L.circleMarker([")
-                            .append(centroid.getLa())  // Latitude
+                            .append(centroid.getLa())
                             .append(", ")
-                            .append(centroid.getLo())  // Longitude
+                            .append(centroid.getLo())
                             .append("], { radius: 10, color: '")
-                            .append(centroid.getColor())  // Boja dodeljena svakoj lokaciji
+                            .append(centroid.getColor())
                             .append("', fillColor: '")
-                            .append(centroid.getColor())  // Ispunjava marker bojom
-                            .append("', fillOpacity: 0.8 })")  // Podesite prozirnost ispune
+                            .append(centroid.getColor())
+                            .append("', fillOpacity: 0.8 })")
                             .append(".addTo(map)")
                             .append(".bindPopup('")
-                            .append(centroid.getName())  // Ime lokacije
+                            .append(centroid.getName())
                             .append(" - Capacity: ")
-                            .append(centroid.getCapacity())  // Kapacitet
+                            .append(centroid.getCapacity())
                             .append(" - Lo: ")
                             .append(centroid.getLo())
                             .append(" - La: ")

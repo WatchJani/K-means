@@ -13,14 +13,45 @@ public class KMeans {
         this.centroids = new Location[k];
         this.locations = locations;
 
-        for (int i = 0; i < k; i++) {
-            this.centroids[i] = locations[i];
-            this.centroids[i].setColor(generateRandomColor(random));
+        this.centroids[0] = locations[random.nextInt(locations.length)];
+        this.centroids[0].setColor(generateRandomColor(random));
+
+        for (int i = 1; i < k; i++) {
+            double[] distances = new double[locations.length];
+            double totalDistance = 0;
+
+            for (int j = 0; j < locations.length; j++) {
+                distances[j] = findMinDistanceToCentroids(locations[j], i);
+                totalDistance += distances[j];
+            }
+
+
+            double randomDistance = random.nextDouble() * totalDistance;
+            double cumulativeDistance = 0;
+            for (int j = 0; j < locations.length; j++) {
+                cumulativeDistance += distances[j];
+                if (cumulativeDistance >= randomDistance) {
+                    this.centroids[i] = locations[j];
+                    this.centroids[i].setColor(generateRandomColor(random));
+                    break;
+                }
+            }
         }
     }
 
+    private double findMinDistanceToCentroids(Location location, int centroidCount) {
+        double minDistance = Double.MAX_VALUE;
+        for (int i = 0; i < centroidCount; i++) {
+            double distance = location.distance(centroids[i]);
+            if (distance < minDistance) {
+                minDistance = distance;
+            }
+        }
+        return minDistance;
+    }
+
     public void fit() {
-       for(int i = 0; i < 100; i++) {
+       for(int i = 0; i < 20; i++) {
             List<List<Location>> clusters = new ArrayList<>();
 
             for (int j = 0; j < k; j++) {
@@ -36,14 +67,15 @@ public class KMeans {
 
             for (int j = 0; j < k; j++) {
                 centroids[j] = calculateCentroid(clusters.get(j), centroids[j].getColor());
+               // System.out.println(clusters.get(j).size());
             }
         }
     }
 
     private static String generateRandomColor(Random random) {
-        int red = random.nextInt(256);  // 0-255
-        int green = random.nextInt(256);  // 0-255
-        int blue = random.nextInt(256);  // 0-255
+        int red = random.nextInt(256);
+        int green = random.nextInt(256);
+        int blue = random.nextInt(256);
 
         // Pretvaramo brojeve u hex format i formatiramo kao #RRGGBB
         return String.format("#%02X%02X%02X", red, green, blue);

@@ -23,7 +23,6 @@ public class Main extends Application {
 
             KMeans cluster = new KMeans(NumberOfClusters, locations);
 
-
             long startTime = System.currentTimeMillis();
             long maxDurationTestTime = 60 * 1_000;
 
@@ -46,17 +45,23 @@ public class Main extends Application {
 //                System.out.println(centroids[i].getCapacity());
 //            }
 
+            //WebView is a component that enables the display of HTML content within JavaFX applications
             WebView webView = new WebView();
+
+            //WebEngine enables loading, displaying and interacting with web content
             WebEngine webEngine = webView.getEngine();
 
+            //listener (listener) to the change of state of the LoadWorker object.
+            //LoadWorker is used to monitor the progress of loading content into WebEngine.
+            //stateProperty() allows monitoring the current page loading state.
             webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == javafx.concurrent.Worker.State.SUCCEEDED) {
-                    webEngine.executeScript(CreateJS(locations, centroids).toString());
+                    webEngine.executeScript(CreateJS(locations, centroids).toString()); //execute my js code
                 }
             });
 
             File file = new File("src/map.html");
-            webEngine.load(file.toURI().toString());
+            webEngine.load(file.toURI().toString()); //loads the file that is on the disk and displays it in the WebView
 
             Scene scene = new Scene(webView, 800, 600);
             primaryStage.setTitle("Leaflet Map in JavaFX");
@@ -90,6 +95,12 @@ public class Main extends Application {
             }
         }
 
+
+
+        //L.circleMarker([45.2671, 19.8335], { radius: 10, color: 'blue', fillColor: 'blue', fillOpacity: 0.8 })
+        //.addTo(map)
+        //          .bindPopup('Center A - Capacity: 100 - Lo: 19.8335 - La: 45.2671');
+
         if (centroids != null) {
             for (Location centroid : centroids) {
                 javascriptCode.append("L.circleMarker([")
@@ -121,6 +132,7 @@ public class Main extends Application {
         TextInputDialog dialog = new TextInputDialog( String.valueOf(defValue));
         dialog.setContentText(msg);
 
+        //opens a dialog and returns a string or nil if nothing is entered
         String userInput = dialog.showAndWait().orElse(null);
         int accumulationSites;
 

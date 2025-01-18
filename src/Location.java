@@ -60,7 +60,7 @@ public class Location {
         return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff + capacityDiff * capacityDiff);
     }
 
-    // Static method to load locations from a JSON file
+    //load locations from a JSON file
     public static void loadLocations(String filePath, Location[] locations) {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
             int counter = 0;
@@ -81,6 +81,8 @@ public class Location {
                 counter++;
             }
 
+
+            //do thaht just in case if we dont have enough accumulation poin
             Random random = new Random();
             while (counter < locationSize) {
                 String name = "Location_" + (counter + 1);

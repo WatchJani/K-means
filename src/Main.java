@@ -10,7 +10,7 @@ import java.io.File;
 public class Main extends Application {
         @Override
         public void start(Stage primaryStage) {
-            int accumulationSites = GetDialog(15000 ,"Number of accumulation point:");
+            int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
             int NumberOfClusters = GetDialog(50, "Number of k cluster");
 
             Location[] locations = new Location[accumulationSites];
@@ -38,7 +38,7 @@ public class Main extends Application {
             }
 
             long endTime = System.currentTimeMillis();
-            System.out.println((endTime - startTime) / numberOfIteration);
+            System.out.println((endTime - startTime) + "ms");
 
             Location[] centroids = cluster.getCentroids();
 //            for (int i =0; i < centroids.length; i++){
@@ -63,14 +63,18 @@ public class Main extends Application {
             File file = new File("src/map.html");
             webEngine.load(file.toURI().toString()); //loads the file that is on the disk and displays it in the WebView
 
+
+
             Scene scene = new Scene(webView, 800, 600);
-            primaryStage.setTitle("Leaflet Map in JavaFX");
+            primaryStage.setTitle("Map");
             primaryStage.setScene(scene);
             primaryStage.show();
         }
 
     private static StringBuilder CreateJS(Location[] locations, Location[] centroids){
         StringBuilder javascriptCode = new StringBuilder();
+
+
         if (locations != null) {
             for (int i = 0; i < locations.length; i++) {
                 javascriptCode.append("L.circleMarker([")
@@ -103,6 +107,10 @@ public class Main extends Application {
 
         if (centroids != null) {
             for (Location centroid : centroids) {
+                if (Double.isNaN(centroid.getLo())){
+                    continue;
+                }
+
                 javascriptCode.append("L.circleMarker([")
                         .append(centroid.getLa())
                         .append(", ")

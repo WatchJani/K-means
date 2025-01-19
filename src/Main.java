@@ -38,7 +38,7 @@ public class Main extends Application {
             }
 
             long endTime = System.currentTimeMillis();
-            System.out.println((endTime - startTime) + "ms");
+            System.out.println((endTime - startTime) / numberOfIteration + "ms");
 
             Location[] centroids = cluster.getCentroids();
 //            for (int i =0; i < centroids.length; i++){

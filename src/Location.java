@@ -4,6 +4,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 public class Location {
@@ -61,10 +62,9 @@ public class Location {
     }
 
     //load locations from a JSON file
-    public static void loadLocations(String filePath, Location[] locations) {
+    public static void loadLocations(String filePath, List<Location> locations, int locationSize) {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
             int counter = 0;
-            int locationSize = locations.length;
 
             JsonArray jsonArray = reader.readArray();
             for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
@@ -77,7 +77,8 @@ public class Location {
                 double la = Double.parseDouble(jsonObject.getString("la"));
                 double lo = Double.parseDouble(jsonObject.getString("lo"));
 
-                locations[counter] = new Location(name, capacity / 1000, la, lo);
+
+                locations.add(new Location(name, capacity / 1000, la, lo));
                 counter++;
             }
 
@@ -90,7 +91,7 @@ public class Location {
                 double la = 48 + (54 - 48) * random.nextDouble();
                 double lo = 8 + (13 - 8) * random.nextDouble();
 
-                locations[counter] = new Location(name, capacity / 1000, la, lo);
+                locations.add(new Location(name, capacity / 1000, la, lo));
                 counter++;
             }
         } catch (IOException e) {

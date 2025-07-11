@@ -6,111 +6,111 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main extends Application {
-        @Override
-        public void start(Stage primaryStage) {
-            int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
-            int NumberOfClusters = GetDialog(50, "Number of k cluster");
 
-            Location[] locations = new Location[accumulationSites];
-            String filePath = "./src/germany.json";
-            Location.loadLocations(filePath, locations);
+    @Override
+    public void start(Stage primaryStage) {
+        int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
+        int NumberOfClusters = GetDialog(50, "Number of k cluster");
 
-//          for (int i = 0; i < accumulationSites; i ++){
-//              System.out.println(i + " " + locations[i].getCapacity() + " " + locations[i].getLa() + " " + locations[i].getLo());
-//          }
+        List<Location> locations = new ArrayList<>();
+        String filePath = "./src/germany.json";
+        Location.loadLocations(filePath, locations, accumulationSites);
 
-            KMeans cluster = new KMeans(NumberOfClusters, locations);
+        //Chosing mod fir calculation
+        int choice = GetDialog(1, "Select mode:\n1 - SingleThread\n2 - MultiThread\n3 - Distributed (not implemented)");
 
-            long startTime = System.currentTimeMillis();
-            long maxDurationTestTime = 60 * 1_000;
+        KMeansAlgorithm cluster;
 
-            int numberOfIteration = 3;
-
-            for (int i = 0; i < numberOfIteration; i++){
-                if (!(System.currentTimeMillis() - startTime < maxDurationTestTime)){
-                    System.out.println("not enough time for testing...");
-                    break;
-                }
-
-                cluster.fit();
-            }
-
-            long endTime = System.currentTimeMillis();
-            System.out.println((endTime - startTime) / numberOfIteration + "ms");
-
-            Location[] centroids = cluster.getCentroids();
-//            for (int i =0; i < centroids.length; i++){
-//                System.out.println(centroids[i].getCapacity());
-//            }
-
-            //WebView is a component that enables the display of HTML content within JavaFX applications
-            WebView webView = new WebView();
-
-            //WebEngine enables loading, displaying and interacting with web content
-            WebEngine webEngine = webView.getEngine();
-
-            //listener (listener) to the change of state of the LoadWorker object.
-            //LoadWorker is used to monitor the progress of loading content into WebEngine.
-            //stateProperty() allows monitoring the current page loading state.
-            webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == javafx.concurrent.Worker.State.SUCCEEDED) {
-                    webEngine.executeScript(CreateJS(locations, centroids).toString()); //execute my js code
-                }
-            });
-
-            File file = new File("src/map.html");
-            webEngine.load(file.toURI().toString()); //loads the file that is on the disk and displays it in the WebView
-
-
-
-            Scene scene = new Scene(webView, 800, 600);
-            primaryStage.setTitle("Map");
-            primaryStage.setScene(scene);
-            primaryStage.show();
+        switch (choice) {
+            case 1:
+                cluster = new KMeans(NumberOfClusters, locations);
+                break;
+            case 2:
+                cluster = new ParallelKMeans(NumberOfClusters, locations);
+                break;
+            case 3:
+                System.out.println("Distributed mode not implemented yet. Using SingleThread mode.");
+                cluster = new DistributedKMeans(NumberOfClusters, locations);
+                break;
+            default:
+                System.out.println("Invalid choice. Using SingleThread mode.");
+                cluster = new KMeans(NumberOfClusters, locations);
         }
 
-    private static StringBuilder CreateJS(Location[] locations, Location[] centroids){
+        long startTime = System.currentTimeMillis();
+        long maxDurationTestTime = 60 * 1_000; // 60 sec
+
+        int numberOfIteration = 3;
+
+        for (int i = 0; i < numberOfIteration; i++) {
+            if (!(System.currentTimeMillis() - startTime < maxDurationTestTime)) {
+                System.out.println("Not enough time for testing...");
+                break;
+            }
+            cluster.fit();
+        }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("Average fit time: " + ((endTime - startTime) / numberOfIteration) + " ms");
+
+        Location[] centroids = cluster.getCentroids();
+
+        WebView webView = new WebView();
+        WebEngine webEngine = webView.getEngine();
+
+        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == javafx.concurrent.Worker.State.SUCCEEDED) {
+                webEngine.executeScript(CreateJS(locations, centroids).toString()); //execute my js code
+            }
+        });
+
+        File file = new File("src/map.html");
+        webEngine.load(file.toURI().toString());
+
+        Scene scene = new Scene(webView, 800, 600);
+        primaryStage.setTitle("Map");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        cluster.shutdown();
+    }
+
+    private static StringBuilder CreateJS(List<Location> locations, Location[] centroids){
         StringBuilder javascriptCode = new StringBuilder();
 
-
         if (locations != null) {
-            for (int i = 0; i < locations.length; i++) {
+            for (Location location : locations) {
                 javascriptCode.append("L.circleMarker([")
-                        .append(locations[i].getLa())
+                        .append(location.getLa())
                         .append(", ")
-                        .append(locations[i].getLo())
+                        .append(location.getLo())
                         .append("], { radius: 1, color: '")
-                        .append(locations[i].getColor())
+                        .append(location.getColor())
                         .append("', fillColor: '")
-                        .append(locations[i].getColor())
+                        .append(location.getColor())
                         .append("', fillOpacity: 0.8 })")
                         .append(".addTo(map)")
                         .append(".bindPopup('")
-                        .append(locations[i].getName())
+                        .append(location.getName())
                         .append(" - Capacity: ")
-                        .append(locations[i].getCapacity())
+                        .append(location.getCapacity())
                         .append(" - Lo: ")
-                        .append(locations[i].getLo())
+                        .append(location.getLo())
                         .append(" - La: ")
-                        .append(locations[i].getLa())
+                        .append(location.getLa())
                         .append("');\n");
             }
         }
 
-
-
-        //L.circleMarker([45.2671, 19.8335], { radius: 10, color: 'blue', fillColor: 'blue', fillOpacity: 0.8 })
-        //.addTo(map)
-        //          .bindPopup('Center A - Capacity: 100 - Lo: 19.8335 - La: 45.2671');
-
         if (centroids != null) {
             for (Location centroid : centroids) {
-                if (Double.isNaN(centroid.getLo())){
+                if (Double.isNaN(centroid.getLo())) {
                     continue;
                 }
-
                 javascriptCode.append("L.circleMarker([")
                         .append(centroid.getLa())
                         .append(", ")
@@ -137,26 +137,25 @@ public class Main extends Application {
     }
 
     private static int GetDialog(int defValue, String msg) {
-        TextInputDialog dialog = new TextInputDialog( String.valueOf(defValue));
+        TextInputDialog dialog = new TextInputDialog(String.valueOf(defValue));
         dialog.setContentText(msg);
 
-        //opens a dialog and returns a string or nil if nothing is entered
         String userInput = dialog.showAndWait().orElse(null);
-        int accumulationSites;
+        int result;
 
         if (userInput != null) {
             try {
-                accumulationSites = Integer.parseInt(userInput);
+                result = Integer.parseInt(userInput);
             } catch (NumberFormatException e) {
-                accumulationSites = defValue;
+                result = defValue;
             }
         } else {
-            accumulationSites = defValue;
+            result = defValue;
         }
-        return accumulationSites;
+        return result;
     }
 
-    public static void main(String[] args)  {
-            launch(args);
-        }
+    public static void main(String[] args) {
+        launch(args);
+    }
 }

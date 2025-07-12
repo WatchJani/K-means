@@ -15,7 +15,6 @@ public class ClosestPointTask implements Runnable {
         this.barrier = barrier;
     }
 
-    // Funkcija za pronalazak najbližeg centroida, isto kao kod tebe
     private int findClosestCentroid(Location loc) {
         double minDist = Double.MAX_VALUE;
         int closest = 0;

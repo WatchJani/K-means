@@ -30,18 +30,34 @@ public class ParallelKMeans implements KMeansAlgorithm {
         for (int iteration = 0; iteration < 100; iteration++) {
             // find the closest centroid for every location
             int numberOfThreads = Runtime.getRuntime().availableProcessors();
-            CyclicBarrier barrierClosest = new CyclicBarrier(numberOfThreads + 1);
+
 
             int size = locations.size();
+
             int chunkSize = (size + numberOfThreads - 1) / numberOfThreads;
+
+            //calculate how much response i need to wait
+            int counter = 0;
+            for (int i = 0; i < numberOfThreads; i++) {
+                int start = i * chunkSize;
+
+                counter++;
+                if (start >= size){break;}
+            }
+
+            CyclicBarrier barrierClosest = new CyclicBarrier(counter);
 
             for (int i = 0; i < numberOfThreads; i++) {
                 int start = i * chunkSize;
                 int end = Math.min(start + chunkSize, size);
                 List<Location> subList = locations.subList(start, end);
+                System.out.println("start: " + start + "end: " + end);
+
+                if (start >= size){break;}
 
                 executor.submit(new ClosestPointTask(subList, centroids, k, barrierClosest));
             }
+
 
             // wait to all threads finish them work
             try {
@@ -51,11 +67,13 @@ public class ParallelKMeans implements KMeansAlgorithm {
                 return;
             }
 
+            System.out.println("what");
             // Group by location by color
             Map<String, Integer> colorToIndex = new HashMap<>();
             for (int i = 0; i < centroids.length; i++) {
                 colorToIndex.put(centroids[i].getColor(), i);
             }
+
 
             List<List<Location>> clusters = new ArrayList<>();
             for (int i = 0; i < k; i++) {

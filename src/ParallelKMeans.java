@@ -2,24 +2,17 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class ParallelKMeans implements KMeansAlgorithm {
-    private int k;
     private Location[] centroids;
     private List<Location> locations;
-    private Random random = new Random();
+    private final Random random = new Random(12345L); // fiksni seed
     private ExecutorService executor = Executors.newCachedThreadPool();
 
-    public ParallelKMeans(int k, List<Location> locations) {
+    public ParallelKMeans(Location[] centroid, List<Location> locations) {
         //number of groups
-        this.k = k;
         //new list of centroids
-        this.centroids = new Location[k];
+        this.centroids = centroid;
         //my json
         this.locations = locations;
-
-        for (int i = 0; i < k; i++) {
-            this.centroids[i] = locations.get(random.nextInt(locations.size()));
-            this.centroids[i].setColor(generateRandomColor());
-        }
     }
 
     public void shutdown() {
@@ -27,81 +20,66 @@ public class ParallelKMeans implements KMeansAlgorithm {
     }
 
     public void fit() {
-        for (int iteration = 0; iteration < 100; iteration++) {
-            // find the closest centroid for every location
+        final int maxIterations = 100;
+
+        for (int iteration = 0; iteration < maxIterations; iteration++) {
             int numberOfThreads = Runtime.getRuntime().availableProcessors();
-
-
             int size = locations.size();
 
             int chunkSize = (size + numberOfThreads - 1) / numberOfThreads;
 
-            //calculate how much response i need to wait
-            int counter = 0;
+            // Koliko će niti zapravo biti pokrenuto (one koje imaju podlistu)
+            int activeThreads = 0;
             for (int i = 0; i < numberOfThreads; i++) {
                 int start = i * chunkSize;
-
-                counter++;
-                if (start >= size){break;}
+                if (start >= size) break;
+                activeThreads++;
             }
 
-            CyclicBarrier barrierClosest = new CyclicBarrier(counter);
+            List<List<PartialCentroid>> matrix = new ArrayList<>();
+            for (int i = 0; i < centroids.length; i++) {
+                matrix.add(Collections.synchronizedList(new ArrayList<>()));
+            }
 
-            for (int i = 0; i < numberOfThreads; i++) {
+            CyclicBarrier barrier = new CyclicBarrier(activeThreads + 1); // +1 za glavnu nit
+
+            for (int i = 0; i < activeThreads; i++) {
                 int start = i * chunkSize;
                 int end = Math.min(start + chunkSize, size);
                 List<Location> subList = locations.subList(start, end);
-                System.out.println("start: " + start + "end: " + end);
-
-                if (start >= size){break;}
-
-                executor.submit(new ClosestPointTask(subList, centroids, k, barrierClosest));
+                executor.submit(new ClosestPointTask(subList, centroids, barrier, matrix));
             }
 
-
-            // wait to all threads finish them work
             try {
-                barrierClosest.await();
+                barrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
                 Thread.currentThread().interrupt();
                 return;
             }
 
-            System.out.println("what");
-            // Group by location by color
-            Map<String, Integer> colorToIndex = new HashMap<>();
+            // Na osnovu delimičnih centroida, racunamo pravi centar centroida
             for (int i = 0; i < centroids.length; i++) {
-                colorToIndex.put(centroids[i].getColor(), i);
-            }
-
-
-            List<List<Location>> clusters = new ArrayList<>();
-            for (int i = 0; i < k; i++) {
-                clusters.add(new ArrayList<>());
-            }
-
-            for (Location loc : locations) {
-                Integer index = colorToIndex.get(loc.getColor());
-                if (index != null) {
-                    clusters.get(index).add(loc);
-                }
-            }
-
-            // Calculate new centroids center
-            CyclicBarrier barrierCentroids = new CyclicBarrier(k + 1);
-            for (int i = 0; i < k; i++) {
-                List<Location> cluster = clusters.get(i);
-                String color = centroids[i].getColor();
-                executor.submit(new CentroidTask(cluster, color, centroids, i, barrierCentroids));
-            }
-
-            try {
-                barrierCentroids.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
-                Thread.currentThread().interrupt();
-                return;
+                centroids[i] = calculateWeightedCentroid(matrix.get(i), centroids[i].getColor());
             }
         }
+    }
+
+    public Location calculateWeightedCentroid(List<PartialCentroid> partials, String color) {
+        double sumLa = 0, sumLo = 0, sumCapacity = 0;
+        int totalCount = 0;
+
+        for (PartialCentroid pc : partials) {
+            sumLa += pc.centroid.getLa() * pc.count;
+            sumLo += pc.centroid.getLo() * pc.count;
+            sumCapacity += pc.centroid.getCapacity() * pc.count;
+            totalCount += pc.count;
+        }
+
+        if (totalCount == 0) {
+            return new Location("Centroid", 0, 0, 0, color);
+        }
+
+        return new Location("Centroid", sumCapacity / totalCount, sumLa / totalCount, sumLo / totalCount, color);
     }
 
     @Override
@@ -109,10 +87,5 @@ public class ParallelKMeans implements KMeansAlgorithm {
         return centroids;
     }
 
-    private String generateRandomColor() {
-        int r = random.nextInt(256);
-        int g = random.nextInt(256);
-        int b = random.nextInt(256);
-        return String.format("#%02X%02X%02X", r, g, b);
-    }
+
 }

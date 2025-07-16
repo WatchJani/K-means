@@ -2,22 +2,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class KMeans {
+public class KMeans implements KMeansAlgorithm{
     private int k;
     private Location[] centroids;
-    private  Random random = new Random();
-    private Location[] locations;
+    private final Random random = new Random(12345L); // fiksni seed
+    private List<Location> locations;
 
-    public KMeans(int k, Location[] locations) {
-        //number of groups
+    public KMeans(int k, List<Location> locations) {
         this.k = k;
-        //new list of centroids
         this.centroids = new Location[k];
-        //my json
         this.locations = locations;
 
         for (int i = 0; i < k; i++) {
-            this.centroids[i] = locations[random.nextInt(locations.length)];
+            // Uzmi nasumičnu lokaciju iz liste
+            Location randomLocation = locations.get(random.nextInt(locations.size()));
+            this.centroids[i] = randomLocation;
             this.centroids[i].setColor(generateRandomColor(random));
         }
     }
@@ -68,6 +67,10 @@ public class KMeans {
         }
 
         return closestCentroid;
+    }
+
+    public void  shutdown(){
+
     }
 
     private Location calculateCentroid(List<Location> cluster, String color) {

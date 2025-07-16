@@ -13,6 +13,7 @@ public class Location {
     private double la;
     private double lo;
     private String color;
+    private static final Random random = new Random(12345L);
 
     public Location(String name, double capacity, double la, double lo) {
         this.name = name;
@@ -54,6 +55,14 @@ public class Location {
         return lo;
     }
 
+    public void setLo(double lo){
+        this.lo = lo;
+    }
+
+    public void setLa(double la){
+        this.la = la;
+    }
+
     public double distance(Location other) {
         double latDiff = this.la - other.la;
         double lonDiff = this.lo - other.lo;
@@ -84,10 +93,9 @@ public class Location {
 
 
             //do thaht just in case if we dont have enough accumulation poin
-            Random random = new Random();
             while (counter < locationSize) {
                 String name = "Location_" + (counter + 1);
-                double capacity = 116024 * random.nextDouble();
+                double capacity = 116024 *  random.nextDouble();
                 double la = 48 + (54 - 48) * random.nextDouble();
                 double lo = 8 + (13 - 8) * random.nextDouble();
 

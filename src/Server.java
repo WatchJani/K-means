@@ -1,19 +1,31 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
 
 public class Server extends Thread {
     private final int port;
-    private ExecutorService executor = Executors.newCachedThreadPool();
+
+    public List<Location> locations = new ArrayList<>();
+
+    public ExecutorService executor = Executors.newCachedThreadPool();
 
     public Server(int port) {
         this.port = port;
     }
 
-@Override
+    public synchronized void loadLocationsFromDisk(int number) {
+        String filePath = "./src/germany.json";
+        Location.loadLocations(filePath, locations, number);
+
+    }
+
+
+    @Override
     public void run() {
         Thread.currentThread().setName("Server");
         ServerSocket ss;
@@ -44,7 +56,11 @@ public class Server extends Thread {
             System.out.println("-> Remote Port: " + newPeer.getPort());
             System.out.println("-------------------------");
 
-            executor.submit(new Peer(newPeer));
+            try {
+                executor.submit(new Peer(newPeer, this));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

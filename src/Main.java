@@ -8,9 +8,10 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Main extends Application {
-
+    private final Random random = new Random(12345L); //
     @Override
     public void start(Stage primaryStage) {
         int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
@@ -20,7 +21,6 @@ public class Main extends Application {
         String filePath = "./src/germany.json";
         Location.loadLocations(filePath, locations, accumulationSites);
 
-        //Chosing mod fir calculation
         int choice = GetDialog(1, "Select mode:\n1 - SingleThread\n2 - MultiThread\n3 - Distributed (not implemented)");
 
         KMeansAlgorithm cluster;
@@ -30,10 +30,16 @@ public class Main extends Application {
                 cluster = new KMeans(NumberOfClusters, locations);
                 break;
             case 2:
-                cluster = new ParallelKMeans(NumberOfClusters, locations);
+                Location[] centroids = new Location[NumberOfClusters];
+
+                for (int i = 0; i < NumberOfClusters; i++) {
+                    centroids[i] = locations.get(random.nextInt(locations.size()));
+                    centroids[i].setColor(generateRandomColor());
+                }
+
+                cluster = new ParallelKMeans(centroids, locations);
                 break;
             case 3:
-                System.out.println("Distributed mode not implemented yet. Using SingleThread mode.");
                 cluster = new DistributedKMeans(NumberOfClusters, locations);
                 break;
             default:
@@ -153,6 +159,13 @@ public class Main extends Application {
             result = defValue;
         }
         return result;
+    }
+
+    private String generateRandomColor() {
+        int r = random.nextInt(256);
+        int g = random.nextInt(256);
+        int b = random.nextInt(256);
+        return String.format("#%02X%02X%02X", r, g, b);
     }
 
     public static void main(String[] args) {

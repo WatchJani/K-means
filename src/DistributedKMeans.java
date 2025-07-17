@@ -85,22 +85,22 @@ public class DistributedKMeans implements KMeansAlgorithm {
             throw new RuntimeException("Interrupted while waiting for servers", e);
         }
 
+        int partitionSize = (locations.size() + serverCount - 1) / serverCount;
+
+        int counter = 0;
+
+        for (int i = 0; i < serverCount; i++) {
+            int start = i * partitionSize;
+            int end = Math.min(start + partitionSize, locations.size());
+
+            if (start >= end) {
+                break;
+            }
+            counter++;
+        }
+
         int maxIterations = 100;
         for (int iter = 0; iter < maxIterations; iter++) {
-            int partitionSize = (locations.size() + serverCount - 1) / serverCount;
-
-            int counter = 0;
-
-            for (int i = 0; i < serverCount; i++) {
-                int start = i * partitionSize;
-                int end = Math.min(start + partitionSize, locations.size());
-
-                if (start >= end) {
-                    break;
-                }
-                counter++;
-            }
-
             CountDownLatch latch2 = new CountDownLatch(counter);
             List<List<PartialCentroid>> matrix = new ArrayList<>();
             for (int i = 0; i < centroids.length; i++) {
@@ -145,11 +145,71 @@ public class DistributedKMeans implements KMeansAlgorithm {
             for (int i = 0; i < centroids.length; i++) {
                 centroids[i] = calculateWeightedCentroid(matrix.get(i), centroids[i].getColor());
             }
-
         }
+
+        //=============================================================
+        //recolor
+
+        CountDownLatch latch3 = new CountDownLatch(serverCount);
+
+        for (int i = 0; i < serverCount; i++) {
+            int start = i * partitionSize;
+            int end = Math.min(start + partitionSize, locations.size());
+            if (start >= end) {break;}
+
+            String jsonPayload2 = createJsonPayload(start, end, centroids);
+
+            executor.submit(() -> {
+                try {
+                    String response = networkCluster.sendCommandAndReceiveResponse("LOCATION", jsonPayload2);
+                    List<Location> responseLocations = parseLocations(response);
+
+                    for (int j = start; j < end; j++ ){
+                        locations.set(j, responseLocations.get(j - start));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        //System.out.println("check");
+                        latch3.countDown();  //
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+
+        try {
+            latch3.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for servers", e);
+        }
+
         executor.shutdown();
     }
 
+    public static List<Location> parseLocations(String jsonResponse) {
+        List<Location> locations = new ArrayList<>();
+
+        try (JsonReader reader = Json.createReader(new StringReader(jsonResponse))) {
+            JsonArray jsonArray = reader.readArray();
+
+            for (JsonObject obj : jsonArray.getValuesAs(JsonObject.class)) {
+                String name = obj.getString("name");
+                double capacity = obj.getJsonNumber("capacity").doubleValue();
+                double la = obj.getJsonNumber("la").doubleValue();
+                double lo = obj.getJsonNumber("lo").doubleValue();
+                String color = obj.getString("color");
+
+                Location location = new Location(name, capacity, la, lo, color);
+                locations.add(location);
+            }
+        }
+
+        return locations;
+    }
 
     public Location calculateWeightedCentroid(List<PartialCentroid> partials, String color) {
         double sumLa = 0, sumLo = 0, sumCapacity = 0;

@@ -42,6 +42,36 @@ public class Peer implements Runnable {
         }
     }
 
+    private String handleLocation(String data) {
+        Payload payload = JsonPayloadParser.parsePayload(data);
+        int start = payload.getStart();
+        int end = payload.getEnd();
+
+        List<Location> subList = server.locations.subList(start, end);
+
+        return  toJsonArray(subList);
+    }
+
+    private String toJsonArray(List<Location> locations) {
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        for (Location loc : locations) {
+            JsonObjectBuilder objBuilder = Json.createObjectBuilder()
+                    .add("name", loc.getName())
+                    .add("capacity", loc.getCapacity())
+                    .add("la", loc.getLa())
+                    .add("lo", loc.getLo())
+                    .add("color", loc.getColor());
+            arrayBuilder.add(objBuilder);
+        }
+
+        StringWriter writer = new StringWriter();
+        try (JsonWriter jsonWriter = Json.createWriter(writer)) {
+            jsonWriter.writeArray(arrayBuilder.build());
+        }
+
+        return writer.toString();
+    }
+
     private String handleKMeans(String data) {
         Payload payload = JsonPayloadParser.parsePayload(data);
         int start = payload.getStart();
@@ -150,6 +180,9 @@ public class Peer implements Runnable {
                     break;
                 case "KMEANS":
                     response = handleKMeans(data);
+                    break;
+                case "LOCATION":
+                    response = handleLocation(data);
                     break;
                 default:
                     response = "ERROR Unknown command: " + command;

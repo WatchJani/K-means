@@ -1,4 +1,5 @@
 import javafx.application.Application;
+import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.web.WebEngine;
@@ -16,6 +17,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
         int NumberOfClusters = GetDialog(50, "Number of k cluster");
+        Random random = new Random(12345L);
 
         List<Location> locations = new ArrayList<>();
         String filePath = "./src/germany.json";
@@ -23,29 +25,8 @@ public class Main extends Application {
 
         int choice = GetDialog(1, "Select mode:\n1 - SingleThread\n2 - MultiThread\n3 - Distributed (not implemented)");
 
-        KMeansAlgorithm cluster;
-
-        switch (choice) {
-            case 1:
-                cluster = new KMeans(NumberOfClusters, locations);
-                break;
-            case 2:
-                Location[] centroids = new Location[NumberOfClusters];
-
-                for (int i = 0; i < NumberOfClusters; i++) {
-                    centroids[i] = locations.get(random.nextInt(locations.size()));
-                    centroids[i].setColor(generateRandomColor());
-                }
-
-                cluster = new ParallelKMeans(centroids, locations);
-                break;
-            case 3:
-                cluster = new DistributedKMeans(NumberOfClusters, locations);
-                break;
-            default:
-                System.out.println("Invalid choice. Using SingleThread mode.");
-                cluster = new KMeans(NumberOfClusters, locations);
-        }
+        KMeansAlgorithm cluster = null;
+        Location[] centroidsSecond = new Location[NumberOfClusters];
 
         long startTime = System.currentTimeMillis();
         long maxDurationTestTime = 60 * 1_000; // 60 sec
@@ -57,6 +38,22 @@ public class Main extends Application {
                 System.out.println("Not enough time for testing...");
                 break;
             }
+
+            switch (choice) {
+                case 1:
+                    cluster = new KMeans(NumberOfClusters, locations);
+                    break;
+                case 2:
+                    cluster = new ParallelKMeans(locations, NumberOfClusters);
+                    break;
+                case 3:
+                    cluster = new DistributedKMeans(NumberOfClusters, locations);
+                    break;
+                default:
+                    System.out.println("Invalid choice. Using SingleThread mode.");
+                    cluster = new KMeans(NumberOfClusters, locations);
+            }
+
             cluster.fit();
         }
 
@@ -69,7 +66,7 @@ public class Main extends Application {
         WebEngine webEngine = webView.getEngine();
 
         webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == javafx.concurrent.Worker.State.SUCCEEDED) {
+            if (newValue == Worker.State.SUCCEEDED) {
                 webEngine.executeScript(CreateJS(locations, centroids).toString()); //execute my js code
             }
         });
@@ -161,12 +158,6 @@ public class Main extends Application {
         return result;
     }
 
-    private String generateRandomColor() {
-        int r = random.nextInt(256);
-        int g = random.nextInt(256);
-        int b = random.nextInt(256);
-        return String.format("#%02X%02X%02X", r, g, b);
-    }
 
     public static void main(String[] args) {
         launch(args);

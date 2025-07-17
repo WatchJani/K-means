@@ -7,13 +7,23 @@ public class ParallelKMeans implements KMeansAlgorithm {
     private final Random random = new Random(12345L); // fiksni seed
     private ExecutorService executor = Executors.newCachedThreadPool();
 
-    public ParallelKMeans(Location[] centroid, List<Location> locations) {
-        //number of groups
-        //new list of centroids
-        this.centroids = centroid;
-        //my json
-        this.locations = locations;
+    public ParallelKMeans(List<Location> locations, int NumberOfClusters) {
+            this.locations = locations;
+            this.centroids = new Location[NumberOfClusters];
+
+            for (int j = 0; j < NumberOfClusters; j++) {
+                this.centroids[j] = locations.get(random.nextInt(locations.size()));
+                this.centroids[j].setColor(generateRandomColor());
+            }
     }
+
+    private String generateRandomColor() {
+        int r = random.nextInt(256);
+        int g = random.nextInt(256);
+        int b = random.nextInt(256);
+        return String.format("#%02X%02X%02X", r, g, b);
+    }
+
 
     public void shutdown() {
         executor.shutdown();

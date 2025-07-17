@@ -20,9 +20,7 @@ public class ParallelKMeans implements KMeansAlgorithm {
     }
 
     public void fit() {
-        final int maxIterations = 100;
-
-        for (int iteration = 0; iteration < maxIterations; iteration++) {
+        for (int iteration = 0; iteration < 100; iteration++) {
             int numberOfThreads = Runtime.getRuntime().availableProcessors();
             int size = locations.size();
 
@@ -57,11 +55,34 @@ public class ParallelKMeans implements KMeansAlgorithm {
                 return;
             }
 
-            // Na osnovu delimičnih centroida, racunamo pravi centar centroida
+            boolean changed = false;
+            Location[] newCentroids = new Location[centroids.length];
+
             for (int i = 0; i < centroids.length; i++) {
-                centroids[i] = calculateWeightedCentroid(matrix.get(i), centroids[i].getColor());
+                Location oldCentroid = centroids[i];
+                Location newCentroid = calculateWeightedCentroid(matrix.get(i), oldCentroid.getColor());
+
+                if (!areEqual(oldCentroid, newCentroid)) {
+                    changed = true;
+                }
+
+                newCentroids[i] = newCentroid;
+            }
+
+            centroids = newCentroids;
+
+            if (!changed) {
+                System.out.println("Converged at iteration: " + iteration);
+                break;
             }
         }
+    }
+
+    private boolean areEqual(Location a, Location b) {
+        final double different = 0.000001;
+        return Math.abs(a.getLa() - b.getLa()) < different &&
+                Math.abs(a.getLo() - b.getLo()) < different &&
+                Math.abs(a.getCapacity() - b.getCapacity()) < different;
     }
 
     public Location calculateWeightedCentroid(List<PartialCentroid> partials, String color) {

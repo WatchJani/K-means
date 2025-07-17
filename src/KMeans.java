@@ -38,12 +38,34 @@ public class KMeans implements KMeansAlgorithm{
                 clusters.get(closestCentroid).add(location); //get array of thaht cluster and add in this group that location
             }
 
+           boolean changed = false;
+
             for (int j = 0; j < k; j++) {
                 //from group of clusters get all location and calculate new cluster position
-                centroids[j] = calculateCentroid(clusters.get(j), centroids[j].getColor());
+                Location oldCentroid = centroids[j];
+                Location newCentroid = calculateCentroid(clusters.get(j), centroids[j].getColor());
                // System.out.println(clusters.get(j).size());
+
+                if (!areEqual(oldCentroid, newCentroid)) {
+                    changed = true;
+                }
+
+                centroids[j] = newCentroid;
             }
+
+           if (!changed) {
+               System.out.println("Converged at iteration: " + i);
+               break;
+           }
+
         }
+    }
+
+    private boolean areEqual(Location a, Location b) {
+        final double different = 0.000001;
+        return Math.abs(a.getLa() - b.getLa()) < different &&
+                Math.abs(a.getLo() - b.getLo()) < different &&
+                Math.abs(a.getCapacity() - b.getCapacity()) < different;
     }
 
     private static String generateRandomColor(Random random) {

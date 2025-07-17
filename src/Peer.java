@@ -102,9 +102,11 @@ public class Peer implements Runnable {
         CyclicBarrier barrier = new CyclicBarrier(activeThreads + 1);
 
         // Pokretanje ClosestPointTask niti
-        for (int i = 0; i < numberOfThreads; i++) {
+        for (int i = 0; i < activeThreads; i++) {
             int startIdx = start + i * chunkSize;
             int endIdx = Math.min(startIdx + chunkSize, end);
+
+            //if (startIdx >= endIdx) {break;}
 
             List<Location> subList = server.locations.subList(startIdx, endIdx);
             System.out.println("Thread " + i + ": from " + startIdx + " to " + endIdx + ", subList size = " + subList.size());

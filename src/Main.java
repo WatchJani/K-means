@@ -12,22 +12,19 @@ import java.util.List;
 import java.util.Random;
 
 public class Main extends Application {
-    private final Random random = new Random(12345L); //
     @Override
     public void start(Stage primaryStage) {
         int accumulationSites = GetDialog(5000 ,"Number of accumulation point:");
         int NumberOfClusters = GetDialog(50, "Number of k cluster");
-        Random random = new Random(12345L);
 
         List<Location> locations = new ArrayList<>();
         String filePath = "./src/germany.json";
         Location.loadLocations(filePath, locations, accumulationSites);
 
         int choice = GetDialog(1, "Select mode:\n1 - SingleThread\n2 - MultiThread\n3 - Distributed (not implemented)");
+        int GraphicMod = GetDialog(1, "Do you want graphic mode?");
 
         KMeansAlgorithm cluster = null;
-        Location[] centroidsSecond = new Location[NumberOfClusters];
-
         long startTime = System.currentTimeMillis();
         long maxDurationTestTime = 60 * 1_000; // 60 sec
 
@@ -60,7 +57,8 @@ public class Main extends Application {
         long endTime = System.currentTimeMillis();
         System.out.println("Average fit time: " + ((endTime - startTime) / numberOfIteration) + " ms");
 
-        Location[] centroids = cluster.getCentroids();
+        if (GraphicMod > 0){
+            Location[] centroids = cluster.getCentroids();
 
         WebView webView = new WebView();
         WebEngine webEngine = webView.getEngine();
@@ -78,6 +76,7 @@ public class Main extends Application {
         primaryStage.setTitle("Map");
         primaryStage.setScene(scene);
         primaryStage.show();
+        }
 
         cluster.shutdown();
     }

@@ -112,7 +112,14 @@ public class DistributedKMeans implements KMeansAlgorithm {
                 int end = Math.min(start + partitionSize, locations.size());
                 if (start >= end) {break;}
 
+                //for (int k = 0; k < centroids.length; k++){
+                //    System.out.println(centroids[k].getCapacity() + " " + centroids[k].getLa());
+               // }
+               // System.out.println(centroids.length);
+
                 String jsonPayload2 = createJsonPayload(start, end, centroids);
+
+
 
                 executor.submit(() -> {
                     try {
@@ -141,15 +148,15 @@ public class DistributedKMeans implements KMeansAlgorithm {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for servers", e);
             }
-
             boolean changed = false;
             Location[] newCentroids = new Location[centroids.length];
-
 
 
             for (int i = 0; i < centroids.length; i++) {
                 Location oldCentroid = centroids[i];
                 Location newCentroid = calculateWeightedCentroid(matrix.get(i), oldCentroid.getColor());
+
+               // System.out.println(newCentroid.getCapacity());
 
                 if (!areEqual(oldCentroid, newCentroid)) {
                     changed = true;
@@ -241,6 +248,11 @@ public class DistributedKMeans implements KMeansAlgorithm {
             sumCapacity += pc.centroid.getCapacity() * pc.count;
             totalCount += pc.count;
         }
+
+        if (totalCount == 0) {
+            return new Location("Centroid", 0, 0, 0, color);
+        }
+
 
         return new Location("Centroid", sumCapacity / totalCount, sumLa / totalCount, sumLo / totalCount, color);
     }

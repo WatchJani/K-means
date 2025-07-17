@@ -49,12 +49,17 @@ public class Peer implements Runnable {
         Location[] centroids = payload.getCentroids();
 
         int numberOfThreads = Runtime.getRuntime().availableProcessors();
-        int chunkSize = (end - start + numberOfThreads - 1) / numberOfThreads;
+        int size = end - start;
+        int chunkSize = (size + numberOfThreads - 1) / numberOfThreads;
+
+        System.out.println("size: " + size);
+        System.out.println("chunk size: " + chunkSize);
+
 
         int activeThreads = 0;
         for (int i = 0; i < numberOfThreads; i++) {
             int startIndex = i * chunkSize;
-            if (startIndex >= end - start) break;
+            if (startIndex >= size) break;
             activeThreads++;
         }
 
@@ -64,13 +69,12 @@ public class Peer implements Runnable {
             matrix.add(Collections.synchronizedList(new ArrayList<>()));
         }
 
-        CyclicBarrier barrier = new CyclicBarrier(activeThreads+ 1);
+        CyclicBarrier barrier = new CyclicBarrier(activeThreads + 1);
 
         // Pokretanje ClosestPointTask niti
         for (int i = 0; i < numberOfThreads; i++) {
             int startIdx = start + i * chunkSize;
-            int endIdx = Math.min(start + (i + 1) * chunkSize, end);
-            if (startIdx >= endIdx) continue;
+            int endIdx = Math.min(startIdx + chunkSize, end);
 
             List<Location> subList = server.locations.subList(startIdx, endIdx);
             System.out.println("Thread " + i + ": from " + startIdx + " to " + endIdx + ", subList size = " + subList.size());

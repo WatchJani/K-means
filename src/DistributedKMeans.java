@@ -95,10 +95,10 @@ public class DistributedKMeans implements KMeansAlgorithm {
                 int start = i * partitionSize;
                 int end = Math.min(start + partitionSize, locations.size());
 
-                counter++;
                 if (start >= end) {
                     break;
                 }
+                counter++;
             }
 
             CountDownLatch latch2 = new CountDownLatch(counter);
@@ -160,10 +160,6 @@ public class DistributedKMeans implements KMeansAlgorithm {
             sumLo += pc.centroid.getLo() * pc.count;
             sumCapacity += pc.centroid.getCapacity() * pc.count;
             totalCount += pc.count;
-        }
-
-        if (totalCount == 0) {
-            return new Location("Centroid", 0, 0, 0, color);
         }
 
         return new Location("Centroid", sumCapacity / totalCount, sumLa / totalCount, sumLo / totalCount, color);

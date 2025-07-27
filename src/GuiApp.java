@@ -17,9 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GuiApp extends Application {
-    private int brojKlastera;
-    private int brojLokacija;
-
     public static void loadLocations(String filePath, List<Location> locations) {
         try (JsonReader reader = Json.createReader(new FileReader(filePath))) {
 
@@ -40,28 +37,6 @@ public class GuiApp extends Application {
 
 
     public void start(Stage primaryStage) {
-        List<String> args = getParameters().getRaw();
-
-        if (args.size() < 2) {
-            System.err.println("Nedovoljno argumenata! Očekivano: <brojKlastera> <brojLokacija>");
-            return;
-        }
-
-        try {
-            brojKlastera = Integer.parseInt(args.get(0));
-            brojLokacija = Integer.parseInt(args.get(1));
-        } catch (NumberFormatException e) {
-            System.err.println("Argumenti nisu validni brojevi.");
-            return;
-        }
-
-        System.out.println("Primljeni argumenti:");
-        System.out.println("Broj klastera: " + brojKlastera);
-        System.out.println("Broj lokacija: " + brojLokacija);
-
-        String currentDir = System.getProperty("user.dir");
-        System.out.println("Trenutni direktorijum: " + currentDir);
-
         List<Location> locations = new ArrayList<>();
         String filePath = "/home/janko/89221073_k-means/K-means/src/GUI_Location.json";
         loadLocations(filePath, locations);

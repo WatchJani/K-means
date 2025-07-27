@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 public class MPIMain {
     private static final Random random = new Random(12345L);
 
+    //from json to location
     public static List<Location> parseLocations(String jsonResponse) {
         List<Location> locations = new ArrayList<>();
 
@@ -36,6 +37,7 @@ public class MPIMain {
         return locations;
     }
 
+    //write location to file
     public static void writeLocationsToFile(List<Location> locations, String filename) {
         String json = toJsonArray(locations);
 
@@ -47,6 +49,7 @@ public class MPIMain {
         }
     }
 
+    //convert location to json
     private static String toJsonArray(List<Location> locations) {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
         for (Location loc : locations) {
@@ -67,6 +70,7 @@ public class MPIMain {
         return writer.toString();
     }
 
+    //are u ready for stop
     private static boolean areEqual(Location a, Location b) {
         final double different = 0.000001;
         return Math.abs(a.getLa() - b.getLa()) < different &&
@@ -74,6 +78,7 @@ public class MPIMain {
                 Math.abs(a.getCapacity() - b.getCapacity()) < different;
     }
 
+    //new centroid center
     public static Location calculateWeightedCentroid(List<PartialCentroid> partials, String color) {
         double sumLa = 0, sumLo = 0, sumCapacity = 0;
         int totalCount = 0;
@@ -102,6 +107,7 @@ public class MPIMain {
         return String.format("#%02X%02X%02X", red, green, blue);
     }
 
+    //from data to json
     private static String createJsonPayload(int start, int end, Location[] centroidsList) {
         JsonArrayBuilder centroidsBuilder = Json.createArrayBuilder();
         for (Location centroid : centroidsList) {
@@ -124,6 +130,7 @@ public class MPIMain {
         return jsonPayload.toString();
     }
 
+    // from json to object
     public static List<PartialCentroid> parsePartialCentroids(String json) {
         List<PartialCentroid> list = new ArrayList<>();
 
@@ -166,11 +173,14 @@ public class MPIMain {
         int accumulationSites = Integer.parseInt(args[args.length - 2]);
         int ShowGUI = Integer.parseInt(args[args.length - 1]);
 
+        //master
         if (rank == 0) {
+            //load data for calculation
             List<Location> locations = new ArrayList<>();
             String filePath = "/home/janko/89221073_k-means/K-means/src/germany.json";
             Location.loadLocations(filePath, locations, accumulationSites);
 
+            //create reandom centroids
             Location[] centroids = new Location[NumberOfClusters];
             for (int i = 0; i < NumberOfClusters; i++) {
                 Location randomLocation = locations.get(random.nextInt(locations.size()));
@@ -178,13 +188,14 @@ public class MPIMain {
                 centroids[i].setColor(generateRandomColor(random));
             }
 
-            //TIME
+            //set TIME from calculation
             long startTime = System.currentTimeMillis();
             long maxDurationTestTime = 60 * 1_000; // 60 sec
 
             int numberOfIteration = 3;
 
             for (int f = 0; f < numberOfIteration; f++) {
+                //copy just because of same calculation, becouse random operation. sometime will be different amount of iteration
                 Location[] copyCentroids = Arrays.copyOf(centroids, centroids.length);
 
                 if (!(System.currentTimeMillis() - startTime < maxDurationTestTime)) {
@@ -192,6 +203,7 @@ public class MPIMain {
                     break;
                 }
 
+                //send to another nodes to prepare them set of data
                 int[] message = new int[]{1, accumulationSites}; // 1 = NUMBER komanda
                 for (int i = 1; i < size; i++) {
                     MPI.COMM_WORLD.Send(message, 0, message.length, MPI.INT, i, 0);
@@ -202,11 +214,13 @@ public class MPIMain {
                 int maxIterations = 100;
 
                 for (int iter = 0; iter < maxIterations; iter++) {
+                    //set list of list for final calculation of centroid
                     List<List<PartialCentroid>> matrix = new ArrayList<>();
                     for (int i = 0; i < centroids.length; i++) {
                         matrix.add(Collections.synchronizedList(new ArrayList<>()));
                     }
 
+                    //logic for dividing job
                     int blockSize = (locations.size() + size - 2) / (size - 1);
 
                     for (int i = 1; i < size; i++) {
@@ -216,31 +230,36 @@ public class MPIMain {
                             break;
                         }
 
+                        //create payload for job
                         String jsonPayload2 = createJsonPayload(start, end, copyCentroids);
-
                         byte[] jsonBytes = jsonPayload2.getBytes();
                         int length = jsonBytes.length;
 
-                        int[] kmeansCommand = new int[]{2, 0, 0};
+                        //send command
+                        int[] kmeansCommand = new int[]{2};
                         MPI.COMM_WORLD.Send(kmeansCommand, 0, kmeansCommand.length, MPI.INT, i, 0);
 
+                        //send length of payload
                         MPI.COMM_WORLD.Send(new int[]{length}, 0, 1, MPI.INT, i, 1);
+                        //send payload
                         MPI.COMM_WORLD.Send(jsonBytes, 0, length, MPI.BYTE, i, 2);
                     }
 
+                    //wait and recive all data from privies send
                     for (int i = 1; i < size; i++) {
+                        //get result length
                         int[] resultLengthBuffer = new int[1];
                         MPI.COMM_WORLD.Recv(resultLengthBuffer, 0, 1, MPI.INT, i, 3);
                         int resultLength = resultLengthBuffer[0];
 
+                        //get result
                         byte[] resultDataBuffer = new byte[resultLength];
                         MPI.COMM_WORLD.Recv(resultDataBuffer, 0, resultLength, MPI.BYTE, i, 4);
 
+                        //parse result
                         String resultJson = new String(resultDataBuffer);
-                        JsonReader reader = Json.createReader(new StringReader(resultJson));
-                        JsonObject resultObject = reader.readObject();
-
-                        List<PartialCentroid> partials = parsePartialCentroids(resultObject.toString());
+                        List<PartialCentroid> partials = parsePartialCentroids(resultJson);
+                        //insert in matrix list for final calculation centroid center
                         for (int k = 0; k < partials.size(); k++) {
                             matrix.get(k).add(partials.get(k));
                         }
@@ -249,10 +268,10 @@ public class MPIMain {
                     boolean changed = false;
                     Location[] newCentroids = new Location[centroids.length];
 
+                    //calculate new centroid and check if he change position from the last time
                     for (int i = 0; i < centroids.length; i++) {
                         Location oldCentroid = copyCentroids[i];
                         Location newCentroid = calculateWeightedCentroid(matrix.get(i), oldCentroid.getColor());
-
 
                         if (!areEqual(oldCentroid, newCentroid)) {
                             changed = true;
@@ -260,7 +279,7 @@ public class MPIMain {
 
                         newCentroids[i] = newCentroid;
                     }
-
+                    //set centroid from global state, for new iteration
                     copyCentroids = newCentroids;
 
                     if (!changed) {
@@ -269,6 +288,8 @@ public class MPIMain {
                     }
                 }
 
+                //part for update location
+                //send info for getting location color for GUI representation
                 int blockSize = (locations.size() + size - 2) / (size - 1);
                 for (int i = 1; i < size; i++) {
                     int start = (i - 1) * blockSize;
@@ -277,18 +298,24 @@ public class MPIMain {
                         break;
                     }
 
+                    //payload is similar like up
                     String jsonPayload2 = createJsonPayload(start, end, copyCentroids);
 
                     byte[] jsonBytes = jsonPayload2.getBytes();
                     int length = jsonBytes.length;
 
-                    int[] kmeansCommand = new int[]{3, 0, 0};
+                    //activate command
+                    int[] kmeansCommand = new int[]{3};
                     MPI.COMM_WORLD.Send(kmeansCommand, 0, kmeansCommand.length, MPI.INT, i, 0);
 
+                    //send length
                     MPI.COMM_WORLD.Send(new int[]{length}, 0, 1, MPI.INT, i, 1);
+
+                    //send payload
                     MPI.COMM_WORLD.Send(jsonBytes, 0, length, MPI.BYTE, i, 2);
                 }
 
+                //recieving data
                 for (int i = 1; i < size; i++) {
                     int start = (i - 1) * blockSize;
                     int end = Math.min(start + blockSize, locations.size());
@@ -311,20 +338,21 @@ public class MPIMain {
                     }
                 }
 
-
+                //put data on disk
                 writeLocationsToFile(locations, "GUI_Location.json");
 
+                //put centroids on disk
                 List<Location> centroidList = Arrays.asList(copyCentroids);
                 writeLocationsToFile(centroidList, "GUI_Centroid.json");
-
-
             }
 
+            //get testing time
             long endTime = System.currentTimeMillis();
             System.out.println("Average fit time: " + ((endTime - startTime) / numberOfIteration) + " ms");
 
+            //shout down mpi processes
             for (int i = 1; i < size; i++) {
-                int[] stopCommand = new int[]{9, 0, 0};
+                int[] stopCommand = new int[]{9};
                 MPI.COMM_WORLD.Send(stopCommand, 0, stopCommand.length, MPI.INT, i, 0);
             }
 
@@ -496,7 +524,7 @@ public class MPIMain {
                 e.printStackTrace();
             }
         }
-        
+
         System.exit(0);
     }
 }
